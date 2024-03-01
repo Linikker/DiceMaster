@@ -54,8 +54,8 @@ def enviar_mensagem(driver, mensagem):
         print("Erro ao enviar mensagem:", e)
 
 def enviar_mensagem_inicial(driver):
-    mensagem_inicial = "Olá eu sou DiceMaster!! Vamos rolar uns dados? 🎲"
-    enviar_mensagem(driver, mensagem_inicial)
+    mensagem_inicial = "DiceMaster diz: Olá eu sou DiceMaster!! Vamos rolar uns dados?"
+    enviar_mensagem(driver, mensagem = mensagem_inicial)
 
 def rolar_dados(quantidade, lados):
     resultados = [random.randint(1, lados) for _ in range(quantidade)]
@@ -86,14 +86,14 @@ def lidar_com_mensagem(mensagem):
     comando = mensagem.split()[0]  # Extrair o comando da mensagem
     if re.match(r'^\d+d\d+[\+\-\*\/]\d*$', comando):
         dados, operador, numero, resultado = calcular_resultado(comando)
-        mensagem_resultado = f"Resultado da operação {comando}: 🎲 {dados} {operador} {numero if numero else 'os dados'} = {resultado}"
+        mensagem_resultado = f"DiceMaster diz: Resultado da operação {comando}: {dados} {operador} {numero if numero else 'os dados'} = {resultado}"
     else:
-        mensagem_resultado = "Comando inválido. Use /XdY[+|-|*|/]Z para realizar uma operação com dados, onde X é a quantidade de dados, Y é o número de lados dos dados e Z é o número para a operação."
+        lidar_com_mensagem(mensagem)
     return mensagem_resultado
 
 def verificar_pedido_rolagem(mensagem):
     # Verifica se a mensagem é um pedido de rolagem de dados
-    return re.match(r'^rolar\s+\d+d\d+$', mensagem)
+    return re.match(r'^r\s+\d+d\d+$', mensagem)
 
 def enviar_rolagem_dados(driver, mensagem):
     # Extrai os parâmetros da mensagem de rolagem de dados
@@ -105,10 +105,10 @@ def enviar_rolagem_dados(driver, mensagem):
     resultado_final = sum(resultados)
     
     # Envia a mensagem com o resultado
-    mensagem_resultado = f"🎲 Resultado da rolagem de {quantidade}d{lados}: {resultados}. Total: {resultado_final}"
+    mensagem_resultado = f"DiceMaster diz: Resultado da rolagem de {quantidade}d{lados}: {resultados}. Total: {resultado_final}"
     enviar_mensagem(driver, mensagem_resultado)
 
-def verificar_e_responder_mensagens(driver):
+def verificar_e_responder_mensagens(driver, mensagens_existentes):
     while True:
         # Aguarda um tempo antes de verificar novas mensagens
         time.sleep(2)
@@ -116,11 +116,16 @@ def verificar_e_responder_mensagens(driver):
         # Verifica se há novas mensagens
         mensagens = driver.find_elements(By.CLASS_NAME, "copyable-text")
         if mensagens:
-            # Extrai o texto de cada mensagem
-            for mensagem in mensagens:
-                texto = mensagem.text
-                if verificar_pedido_rolagem(texto):
-                    enviar_rolagem_dados(driver, texto)
+            # Verifica quais mensagens são novas desde a última verificação
+            mensagens_novas = [mensagem.text for mensagem in mensagens if mensagem.text not in mensagens_existentes]
+            for mensagem in mensagens_novas:
+                if verificar_pedido_rolagem(mensagem):
+                    enviar_rolagem_dados(driver, mensagem)
+                else:
+                    lidar_com_mensagem(mensagem)
+            
+            # Atualiza a lista de mensagens existentes
+            mensagens_existentes = [mensagem.text for mensagem in mensagens]
 
 if __name__ == "__main__":
     # Inicializa o navegador
@@ -131,13 +136,14 @@ if __name__ == "__main__":
     input("Pressione Enter depois de escanear o código QR...")
 
     # Procura o contato
-    procurar_contato(driver, 'O chamado do cthulhu')
+    procurar_contato(driver, 'Jhony')
 
     # Abre a conversa
-    abrir_conversa(driver, 'O chamado do cthulhu')
+    abrir_conversa(driver, 'Jhony')
 
     # Envia a mensagem inicial
     enviar_mensagem_inicial(driver)
 
     # Inicia o loop para verificar e responder mensagens
-    verificar_e_responder_mensagens(driver)
+    mensagens_existentes = ['none']
+    verificar_e_responder_mensagens(driver, mensagens_existentes)
